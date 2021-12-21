@@ -1,4 +1,5 @@
 ﻿// ((AV~B)^~(~C^A))V~(~DV~C)
+// AB~VC~A^~^D~C~V~V
 #include <iostream>
 using namespace std;
 struct Node
@@ -57,15 +58,15 @@ int precedence(char op)	// checking the precedence
 {
 	if (op == 'v' || op == 'V')
 	{
-		return 2;		//lowest precrendence
+		return 1;		//lowest precrendence
 	}
 	else if (op == '^' || op == '⋀')
 	{
-		return 3;		//middle precedence
+		return 2;		//middle precedence
 	}
 	else if (op == '~')
 	{
-		return 4;		//highest precedence
+		return 3;		//highest precedence
 	}
 }
 string ToPostFix(char* arr, int size)
@@ -140,18 +141,37 @@ int checkMaxTerms(string postFix)
 	}
 	return count;
 }
+int checkColumn(char* rowSym,char postFix,int col,int size)
+{
+	int traverse = 0;
+	for (int j = 0; j < col; j++)
+	{
+		if (postFix == rowSym[j])
+		{
+			traverse = j;
+			return traverse;
+		}
+	}
+}
 void Table(int maxTerms, string postFix)
 {
-	char** Table;
+	int size = postFix.size();
+	int** Table;
+	int** Result;
+	int** Process;
+	int** Negation;
 	int row, col, div = 0;
 	col = maxTerms;
 	row = pow(2,maxTerms);
 	int fill = col - 1;
 	int divNum;
-	Table = new char* [row];
+	int traverse;
+	char currentChar;
+	int currentCol;
+	Table = new int* [row];
 	for (int i = 0; i < row; i++)
 	{
-		Table[i] = new char[col];
+		Table[i] = new int[col];
 	}
 	for (int i = 0; i < col; i++)
 	{
@@ -161,11 +181,11 @@ void Table(int maxTerms, string postFix)
 			{
 				if (j < row / 2)
 				{
-					Table[j][i] = 'T';
+					Table[j][i] = 1;
 				}
 				else
 				{
-					Table[j][i] = 'F';
+					Table[j][i] = 0;
 				}
 			}	
 		}
@@ -187,7 +207,7 @@ void Table(int maxTerms, string postFix)
 			{
 				for (int j = index; j < indexNext; j++)
 				{
-					Table[j][i] = 'T';
+					Table[j][i] = 1;
 				}
 				index = index + div;
 				indexNext = indexNext + div;
@@ -196,7 +216,7 @@ void Table(int maxTerms, string postFix)
 			{
 				for (int j = index; j < indexNext; j++)
 				{
-					Table[j][i] = 'F';
+					Table[j][i] = 0;
 				}
 				index = index + div;
 				indexNext = indexNext + div;
@@ -205,13 +225,97 @@ void Table(int maxTerms, string postFix)
 		}
 		fill--;
 	}
+	Result = new int* [row];
+	for (int i = 0; i < row; i++)
+	{
+		Result[i] = new int[1];
+	}
+	Process = new int* [row];
+	for (int i = 0; i < row; i++)
+	{
+		Process[i] = new int[1];
+	}
+	Negation = new int* [row];
+	for (int i = 0; i < row; i++)
+	{
+		Negation[i] = new int[1];
+	}
+	char* rowSym = new char[col];
+	rowSym[0] = 'A';
+	for (int i = 1; i < col; i++)
+	{
+		rowSym[i] = char(rowSym[i - 1] + 1);
+	}
+
+
+
+	push(postFix[0]);
+	push(postFix[1]);
+	for (int i = 2; i < size; i++)
+	{
+		if (isOperator(postFix[i]) == false)
+		{
+			push(postFix[i]);
+		}
+		else
+		{
+			if (postFix[i] == '~')
+			{
+				currentChar = Pop();
+				if (currentChar == 'P')
+				{
+					for (int j = 0; j < row; j++)
+					{
+						if (Result[j][0] == 0)
+						{
+							Result[j][0] = 1;
+						}
+						else if (Result[j][0] == 1)
+						{
+							Result[j][0] = 0;
+						}
+					}
+				}
+				else
+				{
+					currentCol = checkColumn(rowSym, currentChar, col, size);
+					for (int j = 0; j < row; j++)
+					{
+						Process[j][0] = Table[j][currentCol];
+						if (Process[j][0] == 0)
+						{
+							Process[j][0] = 1;
+						}
+						else if (Process[j][0] == 1)
+						{
+							Process[j][0] = 0;
+						}
+						Negation[j][0] = Process[j][0];
+					}
+				}
+				push('P');
+			}
+			else if (postFix[i] == '^')
+			{
+
+
+				push('P');
+			}
+			else if (postFix[i] == 'v' || postFix[i] == 'V')
+			{
+
+
+				push('P');
+			}
+		}
+	}
 	for (int i = 0; i < row; i++)
 	{
 		for (int j = 0; j < col; j++)
 		{
 			cout << Table[i][j] << " ";
 		}
-		cout << endl;
+		cout << " " << Result[i][0] << endl;
 	}
 }
 int main()
@@ -220,6 +324,8 @@ int main()
 	char arr[size] = { NULL };
 	string postFix;
 	int maxTerms = 0;
+	char char1 = 'A';
+	cout << char1 << " " << char(char1 + 1) << endl;
 	cout << "Enter an Expression to evluate: ";
 	cin >> arr;
 	int length = 0;
