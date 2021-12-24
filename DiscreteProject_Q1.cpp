@@ -1,4 +1,4 @@
-﻿// ((AV~B)^~(~C^A))V~(~DV~C)
+// ((AV~B)^~(~C^A))V~(~DV~C)
 // AB~VC~A^~^D~C~V~V
 #include <iostream>
 using namespace std;
@@ -7,7 +7,13 @@ struct Node
 	char data;
 	Node* next;
 };
+struct Node2
+{
+	int** tTable;
+	Node2* next2;
+};
 Node* top = NULL;
+Node2* top2 = NULL;
 void push(char x)		//new node with value
 {
 	if (top == NULL)		//for first node
@@ -23,6 +29,34 @@ void push(char x)		//new node with value
 		newNode->next = top;
 		top = newNode;
 		newNode->data = x;
+	}
+}
+void Push(int** truthTable, int row)
+{
+	Node2* newNode = new Node2;
+	newNode->tTable = new int* [row];
+	for (int i = 0; i < row; i++)
+	{
+		newNode->tTable[i] = new int[1];
+	}
+	if (top2 == NULL)		//for first node
+	{
+		newNode->next2 = NULL;
+		top2 = newNode;
+		for (int i = 0; i < row; i++)
+		{
+			newNode->tTable[i][0] = truthTable[i][0];
+		}
+	}
+	else					//if stack isnt empty
+	{
+		newNode->next2 = top2;
+		top2 = newNode;
+		for (int i = 0; i < row; i++)
+		{
+			newNode->tTable[i][0] = truthTable[i][0];
+		}
+		
 	}
 }
 bool isEmpty()			//checking if the stack is empty
@@ -42,6 +76,21 @@ char Pop()			//pops the top value in stack
 	value = top->data;
 	top = top->next;
 	return value;
+}
+int** pop(int row)			//pops the top value in stack
+{
+	int** TruthTable;
+	TruthTable = new int* [row];
+	for (int i = 0; i < row; i++)
+	{
+		TruthTable[i] = new int[1];
+	}
+	for (int i = 0; i < row; i++)
+	{
+		TruthTable = top2->tTable;
+	}
+	top2 = top2->next2;
+	return TruthTable;
 }
 bool isOperator(char op)	//check for the operators in the string
 {
@@ -141,6 +190,36 @@ int checkMaxTerms(string postFix)
 	}
 	return count;
 }
+bool duplicate(char postFix,char*rowSym, int col)
+{
+	for (int i = 0; i < col; i++)
+	{
+		if (rowSym[i] == postFix)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+void createSymbolArray(string postFix, char*rowSym, int col)
+{
+	for (int i = 0; i < postFix.size(); i++)
+	{
+		if (isOperator(postFix[i]) == false)
+		{
+			for (int j = 0; j < col; j++)
+			{
+				if (rowSym[j] == 'Í')
+				{
+					if (duplicate(postFix[i], rowSym, col) == false)
+					{
+						rowSym[j] = postFix[i];
+					}
+				}
+			}
+		}
+	}
+}
 int checkColumn(char* rowSym,char postFix,int col,int size)
 {
 	int traverse = 0;
@@ -152,6 +231,51 @@ int checkColumn(char* rowSym,char postFix,int col,int size)
 			return traverse;
 		}
 	}
+}
+int** AND(int **result, int** process, int row)
+{
+	for (int i = 0; i < row; i++)
+	{
+		if (process[i][0] == 1 && result[i][0] == 1)
+		{
+			result[i][0] = 1;
+		}
+		else
+		{
+			result[i][0] = 0;
+		}
+	}
+	return result;
+}
+int** OR(int** result, int** process, int row)
+{
+	for (int i = 0; i < row; i++)
+	{
+		if (process[i][0] == 1 || result[i][0] == 1)
+		{
+			result[i][0] = 1;
+		}
+		else if(process[i][0] == 0 && result[i][0] == 0)
+		{
+			result[i][0] = 0;
+		}
+	}
+	return result;
+}
+int** NOT(int** result, int row)
+{
+	for (int i = 0; i < row; i++)
+	{
+		if (result[i][0] == 1)
+		{
+			result[i][0] = 0;
+		}
+		else if (result[i][0] == 0)
+		{
+			result[i][0] = 1;
+		}
+	}
+	return result;
 }
 void Table(int maxTerms, string postFix)
 {
@@ -241,73 +365,48 @@ void Table(int maxTerms, string postFix)
 		Negation[i] = new int[1];
 	}
 	char* rowSym = new char[col];
-	rowSym[0] = 'A';
-	for (int i = 1; i < col; i++)
-	{
-		rowSym[i] = char(rowSym[i - 1] + 1);
-	}
-
-
-
-	push(postFix[0]);
-	push(postFix[1]);
-	for (int i = 2; i < size; i++)
+	createSymbolArray(postFix, rowSym, col);
+	for (int i = 0; i < size; i++)
 	{
 		if (isOperator(postFix[i]) == false)
 		{
-			push(postFix[i]);
+			currentCol = checkColumn(rowSym, postFix[i], col, size);
+			postFix[i] = char(currentCol) + 48;
+		}
+	}
+	for (int i = 0; i < size; i++)
+	{
+		if (isOperator(postFix[i]) == false)
+		{
+			currentCol = int(postFix[i]) - 48;
+			for (int j = 0; j < row; j++)
+			{
+				Process[j][0] = Table[j][currentCol];
+			}
+			Push(Process, row);
 		}
 		else
 		{
 			if (postFix[i] == '~')
 			{
-				currentChar = Pop();
-				if (currentChar == 'P')
-				{
-					for (int j = 0; j < row; j++)
-					{
-						if (Result[j][0] == 0)
-						{
-							Result[j][0] = 1;
-						}
-						else if (Result[j][0] == 1)
-						{
-							Result[j][0] = 0;
-						}
-					}
-				}
-				else
-				{
-					currentCol = checkColumn(rowSym, currentChar, col, size);
-					for (int j = 0; j < row; j++)
-					{
-						Process[j][0] = Table[j][currentCol];
-						if (Process[j][0] == 0)
-						{
-							Process[j][0] = 1;
-						}
-						else if (Process[j][0] == 1)
-						{
-							Process[j][0] = 0;
-						}
-						Negation[j][0] = Process[j][0];
-					}
-				}
-				push('P');
-			}
-			else if (postFix[i] == '^')
-			{
-
-
-				push('P');
+				Negation = NOT(pop(row), row);
+				Push(Negation, row);
 			}
 			else if (postFix[i] == 'v' || postFix[i] == 'V')
 			{
-
-
-				push('P');
+				Result = OR(pop(row), pop(row), row);
+				Push(Result, row);
+			}
+			else if (postFix[i] == '^')
+			{
+				Result = AND(pop(row), pop(row), row);
+				Push(Result, row);
 			}
 		}
+	}
+	while (top2 != NULL)
+	{
+		Result = pop(row);
 	}
 	for (int i = 0; i < row; i++)
 	{
@@ -315,7 +414,7 @@ void Table(int maxTerms, string postFix)
 		{
 			cout << Table[i][j] << " ";
 		}
-		cout << " " << Result[i][0] << endl;
+		cout << Result[i][0] << " " << endl;
 	}
 }
 int main()
@@ -324,8 +423,6 @@ int main()
 	char arr[size] = { NULL };
 	string postFix;
 	int maxTerms = 0;
-	char char1 = 'A';
-	cout << char1 << " " << char(char1 + 1) << endl;
 	cout << "Enter an Expression to evluate: ";
 	cin >> arr;
 	int length = 0;
@@ -338,8 +435,6 @@ int main()
 	}
 	postFix = ToPostFix(arr, length);
 	maxTerms = checkMaxTerms(postFix);
-	cout << "Num of variables is: " << maxTerms << endl;
-	cout << "Expression is: " << postFix << endl;
 	Table(maxTerms, postFix);
 	return 0;
 }
